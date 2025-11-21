@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { Upload, FileText, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useToast } from '../components/ui/use-toast';
@@ -7,6 +7,10 @@ import { motion } from 'framer-motion';
 const CsvUpload = ({ csvData, setCsvData }) => {
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
+  const [page, setPage] = useState(0); // ✅ pagination state
+  const fileInputRef = useRef(null);   // ✅ ref for file input
+
+  const PAGE_SIZE = 50;
 
   const parseCsv = (text) => {
     const lines = text.split('\n').filter(line => line.trim());
@@ -32,7 +36,7 @@ const CsvUpload = ({ csvData, setCsvData }) => {
   const handleFileUpload = useCallback((file) => {
     if (!file) return;
 
-    if (!file.name.endsWith('.csv')) {
+    if (!file.name.toLowerCase().endsWith('.csv')) {
       toast({
         variant: 'destructive',
         title: 'Invalid File',
@@ -47,6 +51,7 @@ const CsvUpload = ({ csvData, setCsvData }) => {
         const text = e.target.result;
         const parsed = parseCsv(text);
         setCsvData(parsed);
+        setPage(0); // ✅ reset to first page on new upload
         toast({
           title: 'Success',
           description: `Loaded ${parsed.length} rows from CSV`
@@ -81,15 +86,28 @@ const CsvUpload = ({ csvData, setCsvData }) => {
   const handleFileInput = (e) => {
     const file = e.target.files[0];
     handleFileUpload(file);
+    // reset input so uploading the same file again still triggers onChange
+    e.target.value = '';
   };
 
   const clearData = () => {
     setCsvData([]);
+    setPage(0);
     toast({
       title: 'Cleared',
       description: 'CSV data has been cleared'
     });
   };
+
+  // ✅ Pagination calculations
+  const totalRows = csvData.length;
+  const totalPages = Math.ceil(totalRows / PAGE_SIZE);
+  const startIndex = page * PAGE_SIZE;
+  const endIndex = Math.min(startIndex + PAGE_SIZE, totalRows);
+  const currentPageRows = csvData.slice(startIndex, endIndex);
+
+  // Simple array of page numbers: [0, 1, 2, ...]
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
 
   return (
     <motion.div
@@ -109,20 +127,25 @@ const CsvUpload = ({ csvData, setCsvData }) => {
           <Upload className="w-16 h-16 mx-auto mb-4 text-slate-400" />
           <h3 className="text-xl font-semibold mb-2 text-slate-900">Upload CSV File</h3>
           <p className="text-slate-600 mb-6">
-            Drag and drop your CSV file here, or click to browse
+            Drag and drop your CSV file here, or click the button below
           </p>
+
+          {/* ✅ Hidden file input + button trigger */}
           <input
+            ref={fileInputRef}
             type="file"
             accept=".csv"
             onChange={handleFileInput}
             className="hidden"
-            id="csv-upload"
           />
-          <label htmlFor="csv-upload">
-            <Button asChild>
-              <span>Choose File</span>
-            </Button>
-          </label>
+          <Button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-slate-900 text-white hover:bg-slate-800"
+          >
+            Choose File
+          </Button>
+
           <div className="mt-8 text-left bg-slate-50 rounded-lg p-4">
             <p className="text-sm font-semibold text-slate-700 mb-2">Expected CSV Columns:</p>
             <ul className="text-sm text-slate-600 space-y-1">
@@ -146,31 +169,47 @@ const CsvUpload = ({ csvData, setCsvData }) => {
               <FileText className="w-8 h-8 text-green-600" />
               <div>
                 <h3 className="text-xl font-semibold text-slate-900">CSV Loaded</h3>
-                <p className="text-slate-600">{csvData.length} rows imported</p>
+                <p className="text-slate-600">
+                  {totalRows} rows imported
+                </p>
               </div>
             </div>
-            <Button variant="destructive" onClick={clearData}>
-              <X className="w-4 h-4 mr-2" />
-              Clear Data
-            </Button>
+           <Button
+  onClick={clearData}
+  className="bg-red-600 text-white hover:bg-red-700 border border-red-700 shadow-sm"
+>
+  <X className="w-4 h-4 mr-2" />
+  Clear Data
+</Button>
+
           </div>
 
+          {/* Table area */}
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-slate-100">
                   {Object.keys(csvData[0]).map((header) => (
-                    <th key={header} className="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">
+                    <th
+                      key={header}
+                      className="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700"
+                    >
                       {header}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {csvData.slice(0, 5).map((row, index) => (
-                  <tr key={index} className="hover:bg-slate-50 transition-colors">
+                {currentPageRows.map((row, index) => (
+                  <tr
+                    key={startIndex + index}
+                    className="hover:bg-slate-50 transition-colors"
+                  >
                     {Object.values(row).map((value, i) => (
-                      <td key={i} className="border border-slate-300 px-4 py-2 text-sm text-slate-600">
+                      <td
+                        key={i}
+                        className="border border-slate-300 px-4 py-2 text-sm text-slate-600"
+                      >
                         {value}
                       </td>
                     ))}
@@ -178,10 +217,56 @@ const CsvUpload = ({ csvData, setCsvData }) => {
                 ))}
               </tbody>
             </table>
-            {csvData.length > 5 && (
-              <p className="text-sm text-slate-500 mt-4 text-center">
-                Showing 5 of {csvData.length} rows
-              </p>
+          </div>
+
+          {/* Pagination controls under table */}
+          <div className="mt-4 flex flex-col items-center gap-3">
+            <p className="text-sm text-slate-500">
+              Showing <span className="font-semibold">{startIndex + 1}</span> –
+              <span className="font-semibold"> {endIndex}</span> of{' '}
+              <span className="font-semibold">{totalRows}</span> rows
+            </p>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2 flex-wrap justify-center">
+                {/* Previous */}
+                <Button
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="bg-slate-800 text-white hover:bg-slate-900 disabled:bg-slate-300 disabled:text-slate-600"
+                >
+                  Previous
+                </Button>
+
+                {/* Page Numbers */}
+                {pageNumbers.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`
+                      px-3 py-1 rounded-md text-sm font-medium transition-all
+                      ${
+                        p === page
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'bg-white border border-slate-400 text-slate-800 hover:bg-slate-200'
+                      }
+                    `}
+                  >
+                    {p + 1}
+                  </button>
+                ))}
+
+                {/* Next */}
+                <Button
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="bg-slate-800 text-white hover:bg-slate-900 disabled:bg-slate-300 disabled:text-slate-600"
+                >
+                  Next
+                </Button>
+              </div>
             )}
           </div>
         </div>
