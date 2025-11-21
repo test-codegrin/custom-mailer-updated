@@ -71,8 +71,10 @@ const EmailDashboard = ({ csvData, emailTemplate }) => {
     }
   };
 
-  const handleSendTest = async () => {
-    if (!testEmail) {
+  const handleSendTest = async (e) => {
+    e?.preventDefault?.();
+
+    if (!testEmail?.trim()) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -96,8 +98,7 @@ const EmailDashboard = ({ csvData, emailTemplate }) => {
       });
 
       if (error) throw error;
-      
-      // Handle logical errors returned with 200 OK status
+
       if (data && !data.success) {
         throw new Error(data.error || 'Failed to send email');
       }
@@ -106,13 +107,14 @@ const EmailDashboard = ({ csvData, emailTemplate }) => {
         title: 'Test Email Sent',
         description: `Test email sent to ${testEmail}`
       });
+      setTestEmail('');
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Failed to Send',
         description: error.message
       });
-      
+
       if (error.message.includes('API Key') || error.message.includes('SMTP_PASS')) {
         toast({
           variant: 'destructive',
@@ -248,15 +250,15 @@ const EmailDashboard = ({ csvData, emailTemplate }) => {
 
       <div className="bg-blue-50 rounded-lg p-6 mb-8 border border-blue-200">
         <h3 className="text-lg font-semibold text-blue-900 mb-4">Send Test Email</h3>
-        <div className="flex gap-3">
+        <form onSubmit={handleSendTest} className="flex gap-3">
           <input
             type="email"
             value={testEmail}
             onChange={(e) => setTestEmail(e.target.value)}
             placeholder="Enter test email address..."
-            className="flex-1 px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           />
-          <Button onClick={handleSendTest} disabled={isSending}>
+          <Button type="submit" disabled={isSending || !testEmail.trim()}>
             {isSending ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
@@ -264,7 +266,7 @@ const EmailDashboard = ({ csvData, emailTemplate }) => {
             )}
             Send Test
           </Button>
-        </div>
+        </form>
       </div>
 
       <div className="flex gap-3 mb-6">
