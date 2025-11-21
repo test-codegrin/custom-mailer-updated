@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 
 import TemplateEditor from './components/TemplateEditor';
@@ -22,32 +22,33 @@ function App() {
     }
   });
 
-  // Automatically switch to template tab when CSV is uploaded
-  useEffect(() => {
-    if (csvData.length > 0 && activeTab === 'upload') {
-      setActiveTab('template');
-    }
-  }, [csvData, activeTab]);
-
   // Check if we have everything needed to enable the Send tab
-  const isSendEnabled = csvData.length > 0 && 
-                        emailTemplate.subject && 
-                        emailTemplate.subject.trim() !== '' && 
-                        emailTemplate.body && 
-                        emailTemplate.body.trim() !== '';
+  const isSendEnabled =
+    csvData.length > 0 &&
+    emailTemplate.subject &&
+    emailTemplate.subject.trim() !== '' &&
+    emailTemplate.body &&
+    emailTemplate.body.trim() !== '';
 
   return (
     <>
       <Helmet>
         <title>CSV Email Sender - Bulk Email Campaign Tool</title>
-        <meta name="description" content="Send personalized bulk emails using CSV data with custom templates and real-time tracking" />
+        <meta
+          name="description"
+          content="Send personalized bulk emails using CSV data with custom templates and real-time tracking"
+        />
       </Helmet>
       <ToastProvider>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
           <div className="container mx-auto px-4 py-8 max-w-7xl">
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-slate-900 mb-2">CSV Email Sender</h1>
-              <p className="text-slate-600">Upload CSV, create templates, and send personalized emails</p>
+              <h1 className="text-4xl font-bold text-slate-900 mb-2">
+                CSV Email Sender
+              </h1>
+              <p className="text-slate-600">
+                Upload CSV, create templates, and send personalized emails
+              </p>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -62,7 +63,12 @@ function App() {
               </TabsList>
 
               <TabsContent value="upload">
-                <CsvUpload csvData={csvData} setCsvData={setCsvData} />
+                <CsvUpload
+                  csvData={csvData}
+                  setCsvData={setCsvData}
+                  // ✅ Auto-redirect to Template tab after successful CSV upload
+                  onNext={() => setActiveTab('template')}
+                />
               </TabsContent>
 
               <TabsContent value="template">
@@ -75,10 +81,7 @@ function App() {
               </TabsContent>
 
               <TabsContent value="send">
-                <EmailDashboard
-                  csvData={csvData}
-                  emailTemplate={emailTemplate}
-                />
+                <EmailDashboard csvData={csvData} emailTemplate={emailTemplate} />
               </TabsContent>
             </Tabs>
           </div>

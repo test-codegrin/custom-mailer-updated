@@ -269,33 +269,34 @@ const EmailDashboard = ({ csvData, emailTemplate }) => {
         </form>
       </div>
 
-      <div className="flex gap-3 mb-6">
-        <Button 
-          onClick={handleSendSelected} 
-          disabled={isSending || selectedRows.length === 0}
-          className="flex-1"
-        >
-          {isSending ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4 mr-2" />
-          )}
-          Send Selected ({selectedRows.length})
-        </Button>
-        <Button 
-          onClick={handleSendAll} 
-          disabled={isSending}
-          variant="default"
-          className="flex-1"
-        >
-          {isSending ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4 mr-2" />
-          )}
-          Send All Rows
-        </Button>
-      </div>
+     <div className="flex gap-3 mb-6">
+  <Button
+    onClick={handleSendSelected}
+    disabled={isSending || selectedRows.length === 0}
+    className="flex-1 flex items-center justify-center bg-black text-white hover:bg-gray-800"
+  >
+    {isSending ? (
+      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+    ) : (
+      <Send className="w-4 h-4 mr-2" />
+    )}
+    Send Selected ({selectedRows.length})
+  </Button>
+
+  <Button
+    onClick={handleSendAll}
+    disabled={isSending}
+    className="flex-1 flex items-center justify-center bg-black text-white hover:bg-gray-800"
+  >
+    {isSending ? (
+      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+    ) : (
+      <Send className="w-4 h-4 mr-2" />
+    )}
+    Send All Rows
+  </Button>
+</div>
+
 
       <div className="border border-slate-200 rounded-lg overflow-hidden">
         <table className="w-full">
