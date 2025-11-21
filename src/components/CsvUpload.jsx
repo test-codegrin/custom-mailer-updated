@@ -8,17 +8,45 @@ const CsvUpload = ({ csvData, setCsvData }) => {
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
 
+  const parseCsvLine = (line) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    result.push(current.trim());
+    return result;
+  };
+
   const parseCsv = (text) => {
     const lines = text.split('\n').filter(line => line.trim());
     if (lines.length < 2) {
       throw new Error('CSV must contain headers and at least one data row');
     }
 
-    const headers = lines[0].split(',').map(h => h.trim());
+    const headers = parseCsvLine(lines[0]);
     const data = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
+      const values = parseCsvLine(lines[i]);
       const row = {};
       headers.forEach((header, index) => {
         row[header] = values[index] || '';

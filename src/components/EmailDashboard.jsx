@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Mail, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
 import { Button } from './../components/ui/button';
@@ -8,12 +8,15 @@ import { supabase } from '../lib/supabaseClient';
 
 const EmailDashboard = ({ csvData, emailTemplate }) => {
   const { toast } = useToast();
-  const [emailStatuses, setEmailStatuses] = useState(
-    csvData.map(() => ({ status: 'pending', message: '' }))
-  );
+  const [emailStatuses, setEmailStatuses] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [testEmail, setTestEmail] = useState('');
+
+  useEffect(() => {
+    setEmailStatuses(csvData.map(() => ({ status: 'pending', message: '' })));
+    setSelectedRows([]);
+  }, [csvData]);
 
   const replacePlaceholders = (text, row) => {
     let result = text || '';
@@ -319,7 +322,7 @@ const EmailDashboard = ({ csvData, emailTemplate }) => {
                   />
                 </td>
                 <td className="px-4 py-3">
-                  {getStatusIcon(emailStatuses[index].status)}
+                  {emailStatuses[index] ? getStatusIcon(emailStatuses[index].status) : <Clock className="w-5 h-5 text-slate-400" />}
                 </td>
                 <td className="px-4 py-3 text-sm text-slate-900">
                   {row['First Name']} {row['Last Name']}
@@ -331,7 +334,7 @@ const EmailDashboard = ({ csvData, emailTemplate }) => {
                   {row['Company Name']}
                 </td>
                 <td className="px-4 py-3 text-sm text-slate-500">
-                  {emailStatuses[index].message}
+                  {emailStatuses[index]?.message || ''}
                 </td>
               </tr>
             ))}
